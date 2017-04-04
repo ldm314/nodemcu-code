@@ -1,44 +1,33 @@
--- OLED Display demo
--- March, 2016 
--- @kayakpete | pete@hoffswell.com
--- Hardware: 
---   ESP-12E Devkit
---   4 pin I2C OLED 128x64 Display Module
--- Connections:
---   ESP  --  OLED
---   3v3  --  VCC
---   GND  --  GND
---   D1   --  SDA
---   D2   --  SCL
+dofile("oled.lua")
 
--- Variables 
+-- D1 D2 for i2c
 sda = 1 -- SDA Pin
 scl = 2 -- SCL Pin
-
-function init_OLED(sda,scl) --Set up the u8glib lib
-     sla = 0x3C
-     i2c.setup(0, sda, scl, i2c.SLOW)
-     disp = u8g.ssd1306_128x64_i2c(sla)
-     disp:setFont(u8g.font_6x10)
-     disp:setFontRefHeightExtendedText()
-     disp:setDefaultForegroundColor()
-     disp:setFontPosTop()
-     --disp:setRot180()           -- Rotate Display if needed
-end
-
-function print_OLED()
-   disp:firstPage()
-   repeat
-     disp:drawFrame(2,2,126,62)
-     disp:drawStr(5, 5, str1)
-     disp:drawStr(5, 15, str2)
-     disp:drawCircle(18, 47, 14)
-   until disp:nextPage() == false
-   
-end
-
--- Main Program
-str1=wifi.sta.getip() 
-str2="Some more text"
 init_OLED(sda,scl)
-print_OLED() 
+
+str1=wifi.sta.getip() 
+str2="Time here"
+str3="NTP Sync Pending"
+str4=" "
+
+function update_oled()
+    print_OLED(str1,str2,str3,str4) 
+end
+
+--display updater, evey 5 sec
+tmr.create():alarm(500, tmr.ALARM_AUTO, function(cb_timer) --every second
+    sec,usec = rtctime.get()
+    str2 = string.format("%i.%i",sec,usec)
+    update_oled()
+    -- to stop timer: cb_timer:unregister()
+end)
+
+--sync with sntp
+sntp.sync("129.6.15.30",
+  function(sec, usec, server, info)
+    str3 = "NTP Sync Success"
+  end,
+  function()
+    str3 = "NTP Sync Failure"
+  end
+)
