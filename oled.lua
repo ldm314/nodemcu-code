@@ -1,15 +1,17 @@
--- OLED Display demo
--- March, 2016 
--- @kayakpete | pete@hoffswell.com
--- Hardware: 
---   ESP-12E Devkit
---   4 pin I2C OLED 128x64 Display Module
 -- Connections:
 --   ESP  --  OLED
 --   3v3  --  VCC
 --   GND  --  GND
 --   D1   --  SDA
 --   D2   --  SCL
+
+oled_rows = {}
+oled_rows[0] = " "
+oled_rows[1] = " "
+oled_rows[2] = " "
+oled_rows[3] = " "
+oled_rows[4] = " "
+oled_rows[5] = " "
 
 
 function init_OLED(sda,scl) --Set up the u8glib lib
@@ -20,17 +22,23 @@ function init_OLED(sda,scl) --Set up the u8glib lib
      disp:setFontRefHeightExtendedText()
      disp:setDefaultForegroundColor()
      disp:setFontPosTop()
-     --disp:setRot180()           -- Rotate Display if needed
 end
 
-function print_OLED(str1,str2,str3,str4)
+function draw_OLED()
    disp:firstPage()
    repeat
      disp:drawFrame(2,2,126,62)
-     disp:drawStr(5, 5, str1)
-     disp:drawStr(5, 15, str2)
-     disp:drawStr(5, 25, str3)
-     disp:drawStr(5, 35, str4)
-   until disp:nextPage() == false
-   
+     disp:drawStr(5, 4, oled_rows[0])
+     disp:drawStr(5, 14, oled_rows[1])
+     disp:drawStr(5, 24, oled_rows[2])
+     disp:drawStr(5, 34, oled_rows[3])
+     disp:drawStr(5, 44, oled_rows[4])
+     disp:drawStr(5, 54, oled_rows[5])
+   until disp:nextPage() == false   
 end
+
+-- D1 D2 for i2c
+sda = 1 -- SDA Pin
+scl = 2 -- SCL Pin
+init_OLED(sda,scl)
+draw_OLED()
