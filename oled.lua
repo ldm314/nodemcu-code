@@ -6,12 +6,12 @@
 --   D2   --  SCL
 
 oled_rows = {}
-oled_rows[0] = " "
 oled_rows[1] = " "
 oled_rows[2] = " "
 oled_rows[3] = " "
 oled_rows[4] = " "
 oled_rows[5] = " "
+oled_rows[6] = " "
 
 
 function init_OLED(sda,scl) --Set up the u8glib lib
@@ -27,13 +27,13 @@ end
 function draw_OLED()
    disp:firstPage()
    repeat
-     disp:drawFrame(2,2,126,62)
-     disp:drawStr(5, 4, oled_rows[0])
-     disp:drawStr(5, 14, oled_rows[1])
-     disp:drawStr(5, 24, oled_rows[2])
-     disp:drawStr(5, 34, oled_rows[3])
-     disp:drawStr(5, 44, oled_rows[4])
-     disp:drawStr(5, 54, oled_rows[5])
+     --disp:drawFrame(2,2,126,62)
+     disp:drawStr(5, 5, oled_rows[1])
+     disp:drawStr(5, 15, oled_rows[2])
+     disp:drawStr(5, 25, oled_rows[3])
+     disp:drawStr(5, 35, oled_rows[4])
+     disp:drawStr(5, 45, oled_rows[5])
+     disp:drawStr(5, 55, oled_rows[6])
    until disp:nextPage() == false   
 end
 
