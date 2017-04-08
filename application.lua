@@ -1,19 +1,23 @@
+dofile("mqtt.lua")
+
 --sync with sntp
 function do_sntp_sync()
-    oled_rows[2] = "Fetching Time"
+    oled_rows[1] = "Fetching Time"
     draw_OLED()
     sntp.sync("0.pool.ntp.org",
       function(sec, usec, server, info)
-        oled_rows[2] = "NTP Sync Success"
+        oled_rows[3] = "NTP Sync Success"
+        oled_rows[4] = " "
+        oled_rows[5] = " "
         draw_OLED()
-      end,
+      end, 
       function(err,info)
-        oled_rows[2] = "NTP Sync Failure"
+        oled_rows[3] = "NTP Sync Failure"
         if(err) then
-            oled_rows[3] = string.format("%i",err)
+            oled_rows[4] = string.format("%i",err)
         end
         if(info) then   
-            oled_rows[4] = string.format("%s",info)
+            oled_rows[5] = string.format("%s",info)
         end   
         draw_OLED()
       end
