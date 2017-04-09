@@ -15,7 +15,7 @@ mqtt_client:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
 mqtt_client:on("message", function(client, topic, data) 
-  oled_rows[1]=(topic .. ":" ) 
+  --oled_rows[1]=(topic .. ":" ) 
   if data ~= nil then
     oled_rows[2]=data
   end
@@ -25,15 +25,13 @@ end)
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
 mqtt_client:connect("192.168.1.48", 1883, 0, 
     function(client) 
-        oled_rows[1] = "MQTT Connected" 
+        oled_rows[2] = "MQTT Connected" 
         draw_OLED()
         -- subscribe topic with qos = 0
-        client:subscribe("test/topic",0, function(client) print("mqtt subscribe success") end)
-        -- publish a message with data = hello, QoS = 0, retain = 0
-        client:publish("test/topic","hello from esp66",0,0, function(client) print("hello sent") end)
+        client:subscribe("sensor/"..SENSORID,0, function(client) print("mqtt subscribe success") end)
    end, 
     function(client, reason) 
-        oled_rows[1] = string.format("MQTT failed: %s", reason) 
+        oled_rows[2] = string.format("MQTT failed: %s", reason) 
         draw_OLED()
     end
 )

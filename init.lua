@@ -1,6 +1,8 @@
 dofile("credentials.lua")
 dofile("oled.lua")
 
+current_ip = ""
+
 function startup()
     if file.open("init.lua") == nil then
         print("init.lua deleted or renamed")
@@ -30,9 +32,9 @@ tmr.create():alarm(500, tmr.ALARM_AUTO, function(cb_timer)
         if spinner_idx > 4 then spinner_idx = 1 end
     else
         cb_timer:unregister()
-        ip = wifi.sta.getip()
-        if ip then
-            oled_rows[1] = ip
+        current_ip = wifi.sta.getip()
+        if current_ip then
+            oled_rows[1] = current_ip
         end
 
         oled_rows[2] = "Waiting 5 seconds"
