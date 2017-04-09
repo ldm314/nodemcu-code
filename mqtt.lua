@@ -23,13 +23,13 @@ mqtt_client:on("message", function(client, topic, data)
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
-mqtt_client:connect("192.168.1.48", 1883, 0, 
+mqtt_client:connect("192.168.1.48", 1883, 0, 1,
     function(client) 
         oled_rows[2] = "MQTT Connected" 
         draw_OLED()
         -- subscribe topic with qos = 0
         client:subscribe("sensor/"..SENSORID,0, function(client) print("mqtt subscribe success") end)
-   end, 
+    end, 
     function(client, reason) 
         oled_rows[2] = string.format("MQTT failed: %s", reason) 
         draw_OLED()

@@ -74,7 +74,7 @@ read_temp()
 oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
 draw_OLED()
 
-tmr.create():alarm(10000, tmr.ALARM_AUTO, function(my_timer) 
+tmr.create():alarm(60000, tmr.ALARM_AUTO, function(my_timer) 
     have_temp = read_temp()
     if (have_temp) then
         oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
