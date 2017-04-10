@@ -35,8 +35,9 @@ tmr.create():alarm(500, tmr.ALARM_AUTO, function(cb_timer)
         current_ip = wifi.sta.getip()
         if current_ip then
             oled_rows[1] = current_ip
+            print(current_ip)
         end
-
+        
         oled_rows[2] = "Waiting 5 seconds"
         oled_rows[3] = "then starting app"
         draw_OLED()

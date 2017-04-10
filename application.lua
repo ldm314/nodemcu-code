@@ -70,16 +70,19 @@ tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer)
 end)
 
 --read sensor and send message every minute
-read_temp()
-oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
-draw_OLED()
-
-tmr.create():alarm(60000, tmr.ALARM_AUTO, function(my_timer) 
-    have_temp = read_temp()
-    if (have_temp) then
-        oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
-        draw_OLED()
-        mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0)    
-        mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)    
-    end    
-end)
+if(HASTEMP) then
+    read_temp()
+    oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
+    draw_OLED()
+    
+    tmr.create():alarm(60000, tmr.ALARM_AUTO, function(my_timer) 
+        have_temp = read_temp()
+        if (have_temp) then
+            oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
+            draw_OLED()
+            mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0)    
+            mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)    
+        end    
+    end)
+end
+    
