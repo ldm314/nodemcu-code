@@ -1,5 +1,6 @@
 dofile("credentials.lua")
 dofile("oled.lua")
+dofile("relay.lua")
 
 current_ip = ""
 
