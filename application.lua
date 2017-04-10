@@ -85,4 +85,19 @@ if(HASTEMP) then
         end    
     end)
 end
-    
+
+if(HASRELAY and false) then
+    -- lightshow for now
+    tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer)
+        toggle_relay(1)
+    end)    
+    tmr.create():alarm(300, tmr.ALARM_AUTO, function(timer)
+        toggle_relay(2)
+    end)    
+    tmr.create():alarm(200, tmr.ALARM_AUTO, function(timer)
+        toggle_relay(3)
+    end)    
+    tmr.create():alarm(330, tmr.ALARM_AUTO, function(timer)
+        toggle_relay(4)
+    end)    
+end
