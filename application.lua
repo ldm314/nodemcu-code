@@ -1,10 +1,12 @@
 dofile("mqtt.lua")
 
+current_time = ""
 function get_time_str()
     sec = rtctime.get()
     if(sec > 0) then
         tm = rtctime.epoch2cal(sec - 25200) -- -7HRS
-        return string.format("%04d/%02d/%02d %02d:%02d:%02d", tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"])
+        current_time = string.format("%04d/%02d/%02d %02d:%02d:%02d", tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"])
+        return current_time
     else
         return false
     end
@@ -44,6 +46,7 @@ function read_temp()
         -- Integer firmware using this example
         current_temp = string.format("%d.%02d",math.floor(temp),temp_dec/10)
         current_humidity = string.format("%d.%02d",math.floor(humi),humi_dec/10)
+        print("temp: "..current_temp.." humidity: "..current_humidity.." time: "..current_time)
         return true
     elseif status == dht.ERROR_CHECKSUM then
         print( "DHT Checksum error." )
@@ -71,9 +74,22 @@ end)
 
 --read sensor and send message every minute
 if(HASTEMP) then
-    read_temp()
-    oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
-    draw_OLED()
+    if(read_temp()) then
+        oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
+        draw_OLED()
+        --wait for mqtt to connect and then publish
+        tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
+            if(mqtt_connected) then
+                mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)
+                mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0, function()
+                    print("goodnight")
+                    node.dsleep(60000000,2) -- 60 seconds deep sleep
+                end)    
+            end
+        end)
+    end
+    -- goodnight!
+        
     
     tmr.create():alarm(60000, tmr.ALARM_AUTO, function(my_timer) 
         have_temp = read_temp()
@@ -82,6 +98,7 @@ if(HASTEMP) then
             draw_OLED()
             mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0)    
             mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)    
+            node.dsleep(60000000,2) -- 60 seconds        
         end    
     end)
 end

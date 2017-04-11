@@ -28,9 +28,11 @@ mqtt_client:on("message", function(client, topic, data)
     
 end)
 
+mqtt_connected = false
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
 mqtt_client:connect("192.168.1.48", 1883, 0, 1,
     function(client) 
+        mqtt_connected = true
         oled_rows[2] = "MQTT Connected" 
         draw_OLED()
         -- subscribe topic with qos = 0
