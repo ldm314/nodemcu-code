@@ -80,10 +80,14 @@ if(HASTEMP) then
         --wait for mqtt to connect and then publish
         tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
             if(mqtt_connected) then
+                call_count = 0
                 mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)
                 mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0, function()
-                    print("goodnight")
-                    node.dsleep(60000000,2) -- 60 seconds deep sleep
+                    call_count = call_count + 1
+                    if(call_count == 2) then -- as per docs, this function gets called once per publish. after the 2nd one both are done.
+                        print("goodnight")
+                        node.dsleep(60000000,2) -- 60 seconds deep sleep
+                    end
                 end)    
             end
         end)
