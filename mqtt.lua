@@ -35,6 +35,7 @@ mqtt_client:connect("192.168.1.48", 1883, 0, 1,
         mqtt_connected = true
         oled_rows[2] = "MQTT Connected" 
         draw_OLED()
+        print("MQTT Connected")
         -- subscribe topic with qos = 0
         if(HASTEMP) then
             client:subscribe("sensor/"..SENSORID,0, function(client) print("SUBSCRIBE: sensor/"..SENSORID) end)

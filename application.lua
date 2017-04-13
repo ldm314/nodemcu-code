@@ -39,21 +39,30 @@ current_temp = ""
 current_humidity = ""
 
 function read_temp()
-    dht_pin = 7
-    
-    status, temp, humi, temp_dec, humi_dec = dht.read(dht_pin)
-    if status == dht.OK then
-        -- Integer firmware using this example
-        current_temp = string.format("%d.%02d",math.floor(temp),temp_dec/10)
-        current_humidity = string.format("%d.%02d",math.floor(humi),humi_dec/10)
-        print("temp: "..current_temp.." humidity: "..current_humidity.." time: "..current_time)
+    if(HASDS18B20) then
+        getTemp(DS18B20_PIN) -- on pin D2
+        t1 = lasttemp / 10000
+        t2 = (lasttemp >= 0 and lasttemp % 10000) or (10000 - lasttemp % 10000)
+        current_temp = t1 .. "."..string.format("%04d", t2)
+        print(current_temp)
         return true
-    elseif status == dht.ERROR_CHECKSUM then
-        print( "DHT Checksum error." )
-        return false
-    elseif status == dht.ERROR_TIMEOUT then
-        print( "DHT timed out." )
-        return false
+    else
+        dht_pin = 7
+        
+        status, temp, humi, temp_dec, humi_dec = dht.read(dht_pin)
+        if status == dht.OK then
+            -- Integer firmware using this example
+            current_temp = string.format("%d.%02d",math.floor(temp),temp_dec/10)
+            current_humidity = string.format("%d.%02d",math.floor(humi),humi_dec/10)
+            print("temp: "..current_temp.." humidity: "..current_humidity.." time: "..current_time)
+            return true
+        elseif status == dht.ERROR_CHECKSUM then
+            print( "DHT Checksum error." )
+            return false
+        elseif status == dht.ERROR_TIMEOUT then
+            print( "DHT timed out." )
+            return false
+        end
     end
 end
 -- sync with ntp source every 15 min
@@ -81,14 +90,21 @@ if(HASTEMP) then
         tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
             if(mqtt_connected) then
                 call_count = 0
-                mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)
+                count_expected = 1
+                if(current_humidity ~= "") then
+                    mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)
+                    count_expected = 2
+                end
                 mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0, function()
-                    call_count = call_count + 1
-                    if(call_count == 2) then -- as per docs, this function gets called once per publish. after the 2nd one both are done.
-                        print("goodnight")
-                        node.dsleep(60000000,2) -- 60 seconds deep sleep
+                    if(DEEPSLEEP) then
+                        call_count = call_count + 1
+                        if(call_count == count_expected) then -- as per docs, this function gets called once per publish. after the 2nd one both are done.
+                            print("goodnight")
+                            node.dsleep(60000000,2) -- 60 seconds deep sleep
+                        end
                     end
-                end)    
+                end)
+                timer:unregister()    
             end
         end)
     end
@@ -100,9 +116,10 @@ if(HASTEMP) then
         if (have_temp) then
             oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
             draw_OLED()
-            mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0)    
-            mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)    
-            node.dsleep(60000000,2) -- 60 seconds        
+            mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0)  
+            if(current_humidity ~= "") then 
+                mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)  
+            end
         end    
     end)
 end
@@ -122,3 +139,5 @@ if(HASRELAY and false) then
         toggle_relay(4)
     end)    
 end
+
+

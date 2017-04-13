@@ -1,6 +1,7 @@
 dofile("credentials.lua")
 dofile("oled.lua")
 dofile("relay.lua")
+dofile("ds18b20.lua")
 
 current_ip = ""
 
@@ -41,7 +42,7 @@ tmr.create():alarm(500, tmr.ALARM_AUTO, function(cb_timer)
         oled_rows[2] = "Waiting 5 seconds"
         oled_rows[3] = "then starting app"
         draw_OLED()
-        print("5 seconds until app boots")
-        tmr.create():alarm(5000, tmr.ALARM_SINGLE, startup)
+        print("2 seconds until app boots")
+        tmr.create():alarm(2000, tmr.ALARM_SINGLE, startup)
     end
 end)
