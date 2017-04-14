@@ -72,14 +72,26 @@ tmr.create():alarm(900000, tmr.ALARM_AUTO, function(timer) --every 5 min
 end)
 
 --set up timer to update clock
-tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
-    time = get_time_str()
-    if(time) then
-        oled_rows[6] = time
-        draw_OLED()
-    end
-    -- to stop timer: timer:unregister()
-end)
+if(HASOLED) then
+    tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
+        time = get_time_str()
+        if(time) then
+            oled_rows[6] = time
+            draw_OLED()
+        end
+        -- to stop timer: timer:unregister()
+    end)
+end
+
+if(HASVOLTAGE) then
+    tmr.create():alarm(30000, tmr.ALARM_AUTO, function(timer) 
+        volts = get_system_volts()
+        mqtt_client:publish("sensor/"..SENSORID.."/voltage",volts,0,0)
+        print(volts.."mV")
+        -- to stop timer: timer:unregister()
+    end)
+end
+
 
 --read sensor and send message every minute
 if(HASTEMP) then

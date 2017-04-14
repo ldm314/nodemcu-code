@@ -2,6 +2,9 @@ dofile("credentials.lua")
 dofile("oled.lua")
 dofile("relay.lua")
 dofile("ds18b20.lua")
+if(HASVOLTAGE) then -- may cause a restart the first time if it has to change modes
+  dofile("voltage.lua")
+end
 
 current_ip = ""
 
