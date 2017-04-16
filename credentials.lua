@@ -7,5 +7,7 @@ HASDS18B20=true
 DS18B20_PIN=4 --nodemcu D4 = gpio2
 HASOLED=false
 HASRELAY=false
-DEEPSLEEP=false
+DEEPSLEEP=true
 HASVOLTAGE=true
+NTPSYNC=false
+DEBUGOUTPUT=true

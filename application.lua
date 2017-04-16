@@ -1,6 +1,9 @@
 dofile("mqtt.lua")
 
 current_time = ""
+current_temp = ""
+current_humidity = ""
+
 function get_time_str()
     sec = rtctime.get()
     if(sec > 0) then
@@ -35,9 +38,6 @@ function do_sntp_sync()
     )
 end
 
-current_temp = ""
-current_humidity = ""
-
 function read_temp()
     if(HASDS18B20) then
         getTemp(DS18B20_PIN) -- on pin D2
@@ -66,12 +66,13 @@ function read_temp()
     end
 end
 -- sync with ntp source every 15 min
-do_sntp_sync() -- sync once
-tmr.create():alarm(900000, tmr.ALARM_AUTO, function(timer) --every 5 min
-    do_sntp_sync()
-end)
-
---set up timer to update clock
+if(NTPSYNC) then
+    do_sntp_sync() -- sync once
+    tmr.create():alarm(900000, tmr.ALARM_AUTO, function(timer) --every 5 min
+        do_sntp_sync()
+    end)
+end
+--set up timer to update clock if we have a screen.
 if(HASOLED) then
     tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
         time = get_time_str()
@@ -83,59 +84,62 @@ if(HASOLED) then
     end)
 end
 
-if(HASVOLTAGE) then
-    tmr.create():alarm(30000, tmr.ALARM_AUTO, function(timer) 
+publish_count = 0
+expected_count = 0
+function read_and_publish_sensors()
+    publish_count = 0
+    expecteD_count = 0
+    if(HASVOLTAGE) then
         volts = get_system_volts()
-        mqtt_client:publish("sensor/"..SENSORID.."/voltage",volts,0,0)
-        print(volts.."mV")
-        -- to stop timer: timer:unregister()
-    end)
+        mqtt_client:publish("sensor/"..SENSORID.."/voltage",volts,0,0,function() publish_count = publish_count + 1 end)
+        expected_count = expected_count + 1
+        if(DEBUGOUTPUT) then
+            print(volts.."mV")
+        end
+    end
+    
+    if(HASTEMP) then
+        if(read_temp()) then
+            if(HASOLED) then
+                oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
+                draw_OLED()
+            end
+            --wait for mqtt to connect and then publish
+            if(current_humidity ~= "") then
+                mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0,function() publish_count = publish_count + 1 end)
+                expected_count = expected_count + 1
+            end
+            mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0,function() publish_count = publish_count + 1 end)
+            expected_count = expected_count + 1
+        end
+    end
 end
 
-
---read sensor and send message every minute
-if(HASTEMP) then
-    if(read_temp()) then
-        oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
-        draw_OLED()
-        --wait for mqtt to connect and then publish
-        tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
-            if(mqtt_connected) then
-                call_count = 0
-                count_expected = 1
-                if(current_humidity ~= "") then
-                    mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)
-                    count_expected = 2
+-- wait for mqtt to connect and then take the readings
+tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
+    if(mqtt_connected) then
+        timer:unregister()
+        read_and_publish_sensors()
+        if(DEBUGOUTPUT) then print "Waiting for mqtt to finish" end
+        tmr.create():alarm(100, tmr.ALARM_AUTO, function(timer1) -- wait for success
+            if expected_count ~= 0 and expected_count == publish_count then
+                timer1:unregister()
+                if(DEEPSLEEP) then
+                    if(DEBUGOUTPUT) then print "Deep sleep. Goodnight." end
+                    node.dsleep(120000000) -- microseconds, 2min
+                else
+                    if(DEBUGOUTPUT) then print "Waiting until next reading" end
+                    tmr.create():alarm(120000, tmr.ALARM_AUTO, function(timer2)  --every 2 min
+                        read_and_publish_sensors()
+                    end)
                 end
-                mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0, function()
-                    if(DEEPSLEEP) then
-                        call_count = call_count + 1
-                        if(call_count == count_expected) then -- as per docs, this function gets called once per publish. after the 2nd one both are done.
-                            print("goodnight")
-                            node.dsleep(60000000,2) -- 60 seconds deep sleep
-                        end
-                    end
-                end)
-                timer:unregister()    
             end
         end)
     end
-    -- goodnight!
-        
-    
-    tmr.create():alarm(60000, tmr.ALARM_AUTO, function(my_timer) 
-        have_temp = read_temp()
-        if (have_temp) then
-            oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
-            draw_OLED()
-            mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0)  
-            if(current_humidity ~= "") then 
-                mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0)  
-            end
-        end    
-    end)
-end
+end)
 
+
+--read sensor and send message every minute
 if(HASRELAY and false) then
     -- lightshow for now
     tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer)
