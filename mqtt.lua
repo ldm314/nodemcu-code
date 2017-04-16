@@ -21,7 +21,7 @@ mqtt_client:on("message", function(client, topic, data)
     end
     draw_OLED()
 
-    print("topic: "..topic)
+    if(DEBUGOUTPUT) then print("topic: "..topic) end
     if(topic == "relay/"..SENSORID) and data ~= nil then
         print("relay: "..data)
     end
@@ -35,10 +35,10 @@ mqtt_client:connect("192.168.1.48", 1883, 0, 1,
         mqtt_connected = true
         oled_rows[2] = "MQTT Connected" 
         draw_OLED()
-        print("MQTT Connected")
+        if(DEBUGOUTPUT) then print("MQTT Connected") end
         -- subscribe topic with qos = 0
         if(HASTEMP) then
-            client:subscribe("sensor/"..SENSORID,0, function(client) print("SUBSCRIBE: sensor/"..SENSORID) end)
+            client:subscribe("sensor/"..SENSORID,0, function(client) if(DEBUGOUTPUT) then print("SUBSCRIBE: sensor/"..SENSORID) end end)
         end
         if(HASRELAY) then
             client:subscribe("relay/"..SENSORID,0, function(client) print("SUBSCRIBE: relay/"..SENSORID) end)

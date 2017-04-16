@@ -44,7 +44,7 @@ function read_temp()
         t1 = lasttemp / 10000
         t2 = (lasttemp >= 0 and lasttemp % 10000) or (10000 - lasttemp % 10000)
         current_temp = t1 .. "."..string.format("%04d", t2)
-        print(current_temp)
+        if(DEBUGOUTPUT) then print(current_temp) end
         return true
     else
         dht_pin = 7
