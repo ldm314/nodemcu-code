@@ -42,7 +42,7 @@ tmr.create():alarm(500, tmr.ALARM_AUTO, function(cb_timer)
 
         if(DEBUGOUTPUT) then print("IP: "..current_ip) end
         
-        oled_rows[2] = "Waiting 5 seconds"
+        oled_rows[2] = "Waiting 2 seconds"
         oled_rows[3] = "then starting app"
         draw_OLED()
         if(DEBUGOUTPUT) then print("2 seconds until app boots") end
