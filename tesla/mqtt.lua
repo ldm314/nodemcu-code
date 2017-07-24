@@ -15,37 +15,32 @@ mqtt_client:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
 mqtt_client:on("message", function(client, topic, data) 
-    --oled_rows[1]=(topic .. ":" ) 
-    if data ~= nil then
-        oled_rows[2]=data
-    end
-    draw_OLED()
-
     if(DEBUGOUTPUT) then print("topic: "..topic) end
-    if(topic == "relay/"..SENSORID) and data ~= nil then
-        print("relay: "..data)
+    if(topic == "pulse/"..SENSORID) and data ~= nil then
+        print("pulse: "..data)
+        do
+            local pulse, mode, write, wdclr, OUTPUT = tonumber(data), gpio.mode, gpio.write, tmr.wdclr, gpio.OUTPUT
+            mode(1,OUTPUT)
+            for i = 1,pulse do
+                write(1,1)
+                write(1,0)
+            end
+            write(1,0)
+        end
+        
     end
     
 end)
 
 mqtt_connected = false
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
-mqtt_client:connect("192.168.1.48", 1883, 0, 1,
+mqtt_client:connect(MQTT_HOST, 1883, 0, 1,
     function(client) 
         mqtt_connected = true
-        oled_rows[2] = "MQTT Connected" 
-        draw_OLED()
         if(DEBUGOUTPUT) then print("MQTT Connected") end
-        -- subscribe topic with qos = 0
-        if(HASTEMP) then
-            client:subscribe("sensor/"..SENSORID,0, function(client) if(DEBUGOUTPUT) then print("SUBSCRIBE: sensor/"..SENSORID) end end)
-        end
-        if(HASRELAY) then
-            client:subscribe("relay/"..SENSORID,0, function(client) print("SUBSCRIBE: relay/"..SENSORID) end)
-        end
+        client:subscribe("pulse/"..SENSORID,0, function(client) if(DEBUGOUTPUT) then print("SUBSCRIBE: pulse/"..SENSORID) end end)
     end, 
     function(client, reason) 
-        oled_rows[2] = string.format("MQTT failed: %s", reason) 
-        draw_OLED()
+        if(DEBUGOUTPUT) then print(string.format("MQTT failed: %s", reason)) end
     end
 )

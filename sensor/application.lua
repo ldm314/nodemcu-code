@@ -7,8 +7,10 @@ current_humidity = ""
 function get_time_str()
     sec = rtctime.get()
     if(sec > 0) then
-        tm = rtctime.epoch2cal(sec - 25200) -- -7HRS
-        current_time = string.format("%04d/%02d/%02d %02d:%02d:%02d", tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"])
+--        tm = rtctime.epoch2cal(sec - 25200) -- -7HRS
+        tm = rtctime.epoch2cal(sec) -- -7HRS
+        -- {"ts":"2017-06-13T09:02:27.000Z","reading":"-78"}
+        current_time = string.format("%04d-%02d-%02dT%02d:%02d:%02d.000Z", tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"])
         return current_time
     else
         return false
@@ -40,16 +42,14 @@ end
 
 function read_temp()
     if(HASDS18B20) then
-        getTemp(DS18B20_PIN) -- on pin D2
+        getTemp(DS18B20_PIN)
         t1 = lasttemp / 10000
         t2 = (lasttemp >= 0 and lasttemp % 10000) or (10000 - lasttemp % 10000)
         current_temp = t1 .. "."..string.format("%04d", t2)
         if(DEBUGOUTPUT) then print(current_temp) end
         return true
     else
-        dht_pin = 7
-        
-        status, temp, humi, temp_dec, humi_dec = dht.read(dht_pin)
+        status, temp, humi, temp_dec, humi_dec = dht.read(DHT_PIN)
         if status == dht.OK then
             -- Integer firmware using this example
             current_temp = string.format("%d.%02d",math.floor(temp),temp_dec/10)
@@ -87,11 +87,17 @@ end
 publish_count = 0
 expected_count = 0
 function read_and_publish_sensors()
+    ts = get_time_str()
+    if(ts == false) then
+        return false
+    end
+        
     publish_count = 0
     expecteD_count = 0
     if(HASVOLTAGE) then
         volts = get_system_volts()
-        mqtt_client:publish("sensor/"..SENSORID.."/voltage",volts,0,0,function() publish_count = publish_count + 1 end)
+        msg = '{"ts":"'..get_time_str()..'","reading":"'..volts..'"}'
+        mqtt_client:publish("sensor/"..SENSORID.."/voltage",msg,0,0,function() publish_count = publish_count + 1 end)
         expected_count = expected_count + 1
         if(DEBUGOUTPUT) then
             print(volts.."mV")
@@ -104,21 +110,27 @@ function read_and_publish_sensors()
                 oled_rows[1] = current_temp .. "c  " .. current_humidity .. "%h"
                 draw_OLED()
             end
+           
             --wait for mqtt to connect and then publish
             if(current_humidity ~= "") then
-                mqtt_client:publish("sensor/"..SENSORID.."/humidity",current_humidity,0,0,function() publish_count = publish_count + 1 end)
+                msg = '{"ts":"'..get_time_str()..'","reading":"'..current_humidity..'"}'
+                mqtt_client:publish("sensor/"..SENSORID.."/humidity",msg,0,0,function() publish_count = publish_count + 1 end)
                 expected_count = expected_count + 1
             end
-            mqtt_client:publish("sensor/"..SENSORID.."/temperature",current_temp,0,0,function() publish_count = publish_count + 1 end)
+            msg = '{"ts":"'..get_time_str()..'","reading":"'..current_temp..'"}'
+            mqtt_client:publish("sensor/"..SENSORID.."/temperature",msg,0,0,function() publish_count = publish_count + 1 end)
             expected_count = expected_count + 1
         end
     end
 end
 
+
 -- wait for mqtt to connect and then take the readings
-tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer) 
-    if(mqtt_connected) then
+tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer)
+    ts = get_time_str()
+    if(mqtt_connected and ts ~= false) then
         timer:unregister()
+        if(DEBUGOUTPUT) then print "Reading sensors" end
         read_and_publish_sensors()
         if(DEBUGOUTPUT) then print "Waiting for mqtt to finish" end
         tmr.create():alarm(100, tmr.ALARM_AUTO, function(timer1) -- wait for success
@@ -126,10 +138,10 @@ tmr.create():alarm(500, tmr.ALARM_AUTO, function(timer)
                 timer1:unregister()
                 if(DEEPSLEEP) then
                     if(DEBUGOUTPUT) then print "Deep sleep. Goodnight." end
-                    node.dsleep(120000000) -- microseconds, 2min
+                    node.dsleep(SLEEP_TIME * 1000) -- microseconds
                 else
                     if(DEBUGOUTPUT) then print "Waiting until next reading" end
-                    tmr.create():alarm(120000, tmr.ALARM_AUTO, function(timer2)  --every 2 min
+                    tmr.create():alarm(SLEEP_TIME, tmr.ALARM_AUTO, function(timer2) -- miliseconds
                         read_and_publish_sensors()
                     end)
                 end

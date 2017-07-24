@@ -33,7 +33,7 @@ function getTemp(pin)
                 ow.reset(pin)
                 ow.select(pin, addr)
                 ow.write(pin, 0x44, 1)
-                tmr.delay(650000)
+                tmr.delay(700000)
                 present = ow.reset(pin)
                 ow.select(pin, addr)
                 ow.write(pin,0xBE, 1)
@@ -64,5 +64,6 @@ function getTemp(pin)
       end
       addr = ow.search(pin)
       until(addr == nil)
+      ow.depower(pin)
 end
 
